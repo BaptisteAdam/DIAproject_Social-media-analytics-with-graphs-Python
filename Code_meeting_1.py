@@ -50,21 +50,27 @@ def edge_generation(my_network, nb_of_edges):
         if my_network.has_edge(e1, e2) != True:
             n1 = my_network.nodes[e1]
             n2 = my_network.nodes[e2]
+
             delta_age = abs(n1["age"] - n2["age"])
             delta_daily_use = abs(n1["daily_use"] - n2["daily_use"])
-
             my_network.add_edge(e1, e2, delta_age = delta_age, delta_daily_use = delta_daily_use)
-
-    for edge in my_network.edges:
-        print(my_network.get_edge_data(edge[0], edge[1]))
     return my_network
 
-def pro_edge_activation(delta_age, delta_daily_use):
-    age = delta_age / 100
-    daily_use = delta_daily_use/10
+# function that return the probability of an edge activation
+def prob_edge_activation(delta_age, delta_daily_use):
+    age = 1 - delta_age / 100
+    daily_use = 1 - delta_daily_use/10
     return age * 0.5 + daily_use * 0.5
 
 
+
+def graph_generation(nb_nodes, nb_of_edges):
+    my_network = node_generation(nb_nodes)
+    my_network = edge_generation(my_network, nb_of_edges)
+    return my_network
+
+
+# function that position A,B on the left and the others on the right
 def position_nodes(my_network):
     pos = {}
     for index, node in enumerate(my_network.nodes):
@@ -74,11 +80,15 @@ def position_nodes(my_network):
             pos.update({node : (2, index)})
     return pos
 
+
+
 if __name__ == "__main__":
-    my_network = node_generation(100)
-    my_network = edge_generation(my_network, nb_of_edges=40)
+    my_network = graph_generation(10,30)
     #pos = position_nodes(my_network)
-    nx.draw_planar(my_network, with_labels=True)
+    pos = position_nodes(my_network)
+    print(my_network.nodes(data = True))
+
+    nx.draw(my_network, with_labels=True)
     plt.show()
 
 
