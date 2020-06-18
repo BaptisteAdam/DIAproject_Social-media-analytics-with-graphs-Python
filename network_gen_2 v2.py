@@ -126,6 +126,16 @@ def bernoulli(prob):
     return 0
 
 
+def MC_Sampling(my_network, seeds): 
+    #Initialisation  
+    epsilon = 0.1
+    delta = 0.1
+    R = round(1/(epsilon**2)*math.log10(len(seeds))*math.log10(1/delta)) #number of repetitions
+    
+    Z = np.zeros(my_network.number_of_nodes()) #list of counts nodes activated by a potential seed.
+    #A CONTINUER
+
+
 def SocInfl_Maximization(my_network, budgetA) :
     seeds = []
     node_list = list(my_network.nodes)
