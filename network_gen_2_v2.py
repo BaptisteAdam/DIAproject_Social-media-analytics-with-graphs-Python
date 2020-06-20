@@ -1,4 +1,5 @@
 import random
+import math
 from random import randint
 import numpy as np
 import pandas as pd
@@ -107,13 +108,11 @@ def graph_generation(nb_nodes, nb_of_edges):
 # Function that return the probability of an edge activation
 def prob_edge_activation(my_network, node1, node2):
     edge = my_network.get_edge_data(node1, node2)[0]
-
     delta_age = edge['delta_age']
     delta_daily_use = edge['delta_daily_use']
 
     age = 1 - delta_age / 100
     daily_use = 1 - delta_daily_use/10
-
     return age * 0.5 + daily_use * 0.5
 
 # Function that draws the graph, can choose if bipartite or not
@@ -134,13 +133,14 @@ def bernoulli(prob):
 
 def MC_Sampling(my_network, nb_seeds): 
     # Initialisation
-    copy_network = my_network.copy
+    copy_network = my_network.copy()
     state_dict = {name:'waiting' for name in copy_network.nodes}
     nx.set_node_attributes(copy_network, state_dict, 'state')
 
     epsilon = 0.1
     delta = 0.1
-    R = round(1/(epsilon**2)*math.log10(len(seeds))*math.log10(1/delta)) #number of repetitions
+    R = round(1/(epsilon**2)*math.log10(nb_seeds)*math.log10(1/delta)) #number of repetitions
+    print(R)
     list_of_seeds = []
 
     # compute nb_seeds times
@@ -148,52 +148,35 @@ def MC_Sampling(my_network, nb_seeds):
         computed_influence = {}
 
         # compute influence of each potential seed
-        for node in my_network.nodes:
+        for node in copy_network.nodes:
+            if copy_network.nodes[node]['state'] == "seed":
+                continue
             cumulated_influence = 0
             for i in range(R):
                 cumulated_influence += compute_influence(copy_network, node)
             avg_influence = cumulated_influence/R
-            computed_influence[avg_influence] = node
+            computed_influence[node] = avg_influence
         # look for the node with the best influence
-        seed = computed_influence[max(computed_influence.key())]
+        seed = max(computed_influence, key=computed_influence.get)
         list_of_seeds.append(seed)
-        node = copy_network.nodes[seed]
-        node['state'] = "seed"
+        copy_network.nodes[seed]['state'] = "seed"
     return list_of_seeds
 
 def compute_influence(my_network, node):
     Z = 0
     activated_neigh = []
-    exploration_nodes = neighbors(my_network, node)
-    for neighbor in exploration_nodes:
-        if neighbor['state'] != "seed" or neighbor['state'] != "actiated":
-            prob = prob_edge_activation(my_network, node, neighbor)
+    exploration_nodes = nx.neighbors(my_network, node)
+    for neigh in exploration_nodes:
+        neighbor = my_network.nodes[neigh]
+        if neighbor['state'] != "seed" and neighbor['state'] != "activated":
+            prob = prob_edge_activation(my_network, node, neigh)
             if random.random() >= prob:
-                node['state'] = "activated"
-                activated_neigh.append(neighbor)
+                my_network.nodes[neigh]['state'] = "activated"
+                activated_neigh.append(neigh)
                 Z += 1
-    if activated_neigh == []:
+    if len(activated_neigh) == 0:
         return 0
-    return Z + sum([compute_influence(neigh) for neigh in activated_neigh])
-
-
-# def SocInfl_Maximization(my_network, budgetA) :
-    seeds = []
-    node_list = list(my_network.nodes)
-    while (len(seeds) < budgetA):
-        marginal_increase_vector = []
-        node_list_aux = []
-        for node in enumerate(node_list):
-            
-            margIncNode = 4 # calculer l'esperance (en gros, le nombre moyen de node que ca va activer)
-
-            marginal_increase_vector.append(margIncNode)
-            node_list_aux.append(node[1])
-            #ajouter un if() lié à l'ajout au matching pb
-        best_node = node_list_aux[marginal_increase_vector.index(np.max(marginal_increase_vector))]
-        seeds.append(best_node)
-        node_list.remove(best_node)
-    return seeds
+    return Z + sum([compute_influence(my_network, neigh) for neigh in activated_neigh])
 
 
 # --------------------------------- #
@@ -229,13 +212,9 @@ def print_info(my_network):
 #               MAIN                #
 # --------------------------------- #
 if __name__ == "__main__":
-    my_network, color_map = graph_generation(10, 30)
+    my_network, color_map = graph_generation(4, 6)
 
     print_info(my_network)
-    # draw_graph(my_network, color_map, bipartite=False)
+    print(MC_Sampling(my_network, 2))
 
-    value = compute_influence(my_network, my_network.nodes[0])
-    print(value)
-
-
-
+    draw_graph(my_network, color_map, bipartite=False)
