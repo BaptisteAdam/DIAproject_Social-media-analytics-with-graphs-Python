@@ -124,13 +124,6 @@ def draw_graph(my_network, color_map, bipartite=False):
         nx.draw(my_network, with_labels=True, node_color=color_map)
     plt.show()
 
-def bernoulli(prob):
-    nb = randint(1, 100)
-    if nb <= prob*100:
-        return 1
-    return 0
-
-
 def MC_Sampling(my_network, nb_seeds): 
     # Initialisation
     copy_network = my_network.copy()
