@@ -124,7 +124,7 @@ def draw_graph(my_network, color_map, bipartite=False):
         nx.draw(my_network, with_labels=True, node_color=color_map)
     plt.show()
 
-def MC_Sampling(my_network, nb_seeds): 
+def MC_Sampling(my_network, nb_seeds, message): 
     # Initialisation
     copy_network = my_network.copy()
     state_dict = {name:'waiting' for name in copy_network.nodes}
@@ -146,7 +146,7 @@ def MC_Sampling(my_network, nb_seeds):
                 continue
             cumulated_influence = 0
             for i in range(R):
-                cumulated_influence += compute_influence(copy_network, node)
+                cumulated_influence += compute_influence(copy_network, node, message)
             avg_influence = cumulated_influence/R
             computed_influence[node] = avg_influence
         # look for the node with the best influence
@@ -155,7 +155,7 @@ def MC_Sampling(my_network, nb_seeds):
         copy_network.nodes[seed]['state'] = "seed"
     return list_of_seeds
 
-def compute_influence(my_network, node):
+def compute_influence(my_network, node, message):
     Z = 0
     activated_neigh = []
     exploration_nodes = nx.neighbors(my_network, node)
@@ -166,10 +166,11 @@ def compute_influence(my_network, node):
             if random.random() >= prob:
                 my_network.nodes[neigh]['state'] = "activated"
                 activated_neigh.append(neigh)
-                Z += 1
+                if my_network.nodes[neigh]["sex"] == message:
+                    Z += 1
     if len(activated_neigh) == 0:
         return 0
-    return Z + sum([compute_influence(my_network, neigh) for neigh in activated_neigh])
+    return Z + sum([compute_influence(my_network, neigh, message) for neigh in activated_neigh])
 
 
 # --------------------------------- #
@@ -208,6 +209,6 @@ if __name__ == "__main__":
     my_network, color_map = graph_generation(4, 6)
 
     print_info(my_network)
-    print(MC_Sampling(my_network, 2))
+    print(MC_Sampling(my_network, 2, "Male"))
 
     draw_graph(my_network, color_map, bipartite=False)
