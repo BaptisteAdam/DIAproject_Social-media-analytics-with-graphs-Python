@@ -94,9 +94,10 @@ def position_nodes(my_network):
 
 # Function that generates the nodes than the edges to make the whole graph
 def graph_generation(nb_nodes, nb_of_edges):
-    my_network, color_map = node_generation(nb_nodes)
+    n_nodes = nb_nodes*3//4
+    my_network, color_map = node_generation(n_nodes)
     my_network = edge_generation(my_network, nb_of_edges)
-    my_network, color_map = add_feature_D(my_network, color_map, nb_nodes//4)
+    my_network, color_map = add_feature_D(my_network, color_map, nb_nodes-n_nodes)
 
     return my_network, color_map
 
@@ -163,6 +164,9 @@ def compute_influence(my_network, node, message_type):
     Z = 0
     activated_neigh = []
     exploration_nodes = nx.neighbors(my_network, node)
+    
+
+
     for neigh in exploration_nodes:
         neighbor = my_network.nodes[neigh]
         if neighbor['state'] != "seed" and neighbor['state'] != "activated":
@@ -235,12 +239,11 @@ def print_info(my_network):
 #               MAIN                #
 # --------------------------------- #
 if __name__ == "__main__":
-    my_network, color_map = graph_generation(100, 300)
+    my_network, color_map = graph_generation(10, 30)
 
     print_info(my_network)
-    print(MC_Sampling(my_network, 15, "Male"))
+    print(MC_Sampling(my_network, 2, "Male"))
 
     # draw_graph(my_network, color_map, bipartite=False)
 
     approx_err_plot(100, 3)
-
