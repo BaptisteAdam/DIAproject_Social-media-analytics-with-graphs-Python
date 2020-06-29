@@ -28,6 +28,7 @@ def generate_users(nb_of_users):
         sex_dict[name] = random.choice(sex)
         color_map.append(color_sex[sex_dict[name]])
         daily_use_dict[name] = randint(0, 10)
+    print("users generated")
     return name_list, age_dict, sex_dict, daily_use_dict, color_map
 
 # Function that generates the nodes
@@ -39,6 +40,7 @@ def node_generation(nb_of_nodes):
     nx.set_node_attributes(my_network, sex_dict, 'sex')
     nx.set_node_attributes(my_network, daily_use_dict, 'daily_use')
 
+    print("node generated")
     return my_network, color_map
 
 # Function that addd the nodes corresponding to the special feature D (here, they are "NaN" users)
@@ -80,6 +82,7 @@ def edge_generation(my_network, nb_of_edges):
             delta_daily_use = abs(n1["daily_use"] - n2["daily_use"])
 
             my_network.add_edge(e1, e2, delta_age=delta_age, delta_daily_use=delta_daily_use)
+    print("edge generated")
     return my_network
 
 # Function that position A,B on the left and the others on the right
@@ -99,6 +102,7 @@ def graph_generation(nb_nodes, nb_of_edges):
     my_network = edge_generation(my_network, nb_of_edges)
     my_network, color_map = add_feature_D(my_network, color_map, nb_nodes-n_nodes)
 
+    print("graph generated")
     return my_network, color_map
 
 
@@ -144,10 +148,7 @@ def MC_Sampling(my_network, nb_seeds, message_type):
         # compute influence of each potential seed
         for node in copy_network.nodes:
             if copy_network.nodes[node]['state'] == "seed":
-                continue
-            #reinitialize the states of the node for the next seed simulation
-            for nod in copy_network.nodes:
-                copy_network.nodes[nod]['state'] = "waiting"
+                continue           
             cumulated_influence = 0
             for i in range(R):
                 cumulated_influence += compute_influence(copy_network, node, message_type)
@@ -160,47 +161,48 @@ def MC_Sampling(my_network, nb_seeds, message_type):
         value_seed.append(computed_influence[seed])
     return list_of_seeds, value_seed
 
-def compute_influence(my_network, node, message_type):
+def compute_influence(my_network, node, message_type, first=True):
+    #reinitialize the states of the node for the next seed simulation
+    if first:
+        for nod in my_network.nodes:
+            if my_network.nodes[nod]['state'] != "seed":
+                my_network.nodes[nod]['state'] = "waiting"
     Z = 0
     activated_neigh = []
     exploration_nodes = nx.neighbors(my_network, node)
-    
-
 
     for neigh in exploration_nodes:
         neighbor = my_network.nodes[neigh]
         if neighbor['state'] != "seed" and neighbor['state'] != "activated":
             prob = prob_edge_activation(my_network, node, neigh)
-            if random.random() >= prob:
+            if random.random() >= 1-prob:
                 my_network.nodes[neigh]['state'] = "activated"
                 activated_neigh.append(neigh)
-                if my_network.nodes[neigh]["sex"] == message_type:
-                    Z += 1
+                # if my_network.nodes[neigh]["sex"] == message_type:
+                Z += 1
     if len(activated_neigh) == 0:
         return 0
-    return Z + sum([compute_influence(my_network, neigh, message_type) for neigh in activated_neigh])
+    return Z + sum([compute_influence(my_network, neigh, message_type, first=False) for neigh in activated_neigh])
 
 def approx_err_plot(nb_nodes, nb_seeds):
+    R = 50
     delta = np.array([0.1, 0.05, 0.01])
-    epsilon = np.array([0.1, 0.05, 0.01])
     
-    fig, axs = plt.subplots(3, 3)
-    i = 0
-    for epval in epsilon:
-        approx_err = (1/np.exp(1)) + epval
-        j = 0
-        for dval in delta :
-            R = int(round(1/(epval**2)*math.log10(nb_seeds)*math.log10(1/dval)))
-            x_axis = np.linspace(1,R, R)
-            y_axis = np.sqrt((1/x_axis)*math.log10(nb_seeds)*math.log10(1/dval)) 
-            approx = np.full(R, approx_err)
-            axs[i, j].plot(x_axis, y_axis)
-            axs[i, j].plot(x_axis, approx)
-            axs[i, j].set_title("R=" + str(R))
-            axs[i, j].set(xlabel='delta='+str(dval) , ylabel='epsilon='+str(epval))
-            j += 1
-        i += 1    
-    fig.suptitle("Approximation error")
+    fig, axs = plt.subplots(3)
+
+    approx_err = (1/np.exp(1))
+    j = 0
+    for dval in delta :
+        x_axis = np.linspace(1,R, R)
+        y_axis = np.sqrt((1/x_axis)*math.log10(nb_seeds)*math.log10(1/dval)) 
+        approx = np.full(R, approx_err)
+        axs[j].plot(x_axis, y_axis)
+        axs[j].plot(x_axis, approx)
+        axs[j].set_title('delta='+str(dval) )
+        axs[j].set(xlabel='R, number of repetition' , ylabel='Approximation error')
+        j += 1
+    
+    fig.suptitle("Approximation error of the activation probability")
     for ax in axs.flat:
         ax.label_outer()
     plt.show()
@@ -239,10 +241,10 @@ def print_info(my_network):
 #               MAIN                #
 # --------------------------------- #
 if __name__ == "__main__":
-    my_network, color_map = graph_generation(10, 30)
+    my_network, color_map = graph_generation(40, 40)
 
     print_info(my_network)
-    print(MC_Sampling(my_network, 2, "Male"))
+    print(MC_Sampling(my_network, 5, "Male"))
 
     # draw_graph(my_network, color_map, bipartite=False)
 
