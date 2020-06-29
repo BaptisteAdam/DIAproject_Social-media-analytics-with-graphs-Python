@@ -153,11 +153,13 @@ def MC_Sampling(my_network, nb_seeds, message_type):
     return list_of_seeds
 
 def compute_influence(my_network, node, message_type, first=True):
-    #reinitialize the states of the node for the next seed simulation
+    #reinitialize the states of the node for the seed simulation to come
     if first:
         for nod in my_network.nodes:
             if my_network.nodes[nod]['state'] != "seed":
                 my_network.nodes[nod]['state'] = "waiting"
+    
+    # actual seed simulation
     Z = 0
     activated_neigh = []
     exploration_nodes = nx.neighbors(my_network, node)
@@ -169,8 +171,8 @@ def compute_influence(my_network, node, message_type, first=True):
             if random.random() >= 1-prob:
                 my_network.nodes[neigh]['state'] = "activated"
                 activated_neigh.append(neigh)
-                # if my_network.nodes[neigh]["sex"] == message_type:
-                Z += 1
+                if my_network.nodes[neigh]["sex"] == message_type:
+                    Z += 1
     if len(activated_neigh) == 0:
         return 0
     return Z + sum([compute_influence(my_network, neigh, message_type, first=False) for neigh in activated_neigh])
@@ -232,7 +234,7 @@ def print_info(my_network):
 #               MAIN                #
 # --------------------------------- #
 if __name__ == "__main__":
-    my_network, color_map = graph_generation(40, 40)
+    my_network, color_map = graph_generation(40, 60)
 
     print_info(my_network)
     print(MC_Sampling(my_network, 5, "Male"))
