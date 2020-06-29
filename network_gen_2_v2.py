@@ -28,7 +28,6 @@ def generate_users(nb_of_users):
         sex_dict[name] = random.choice(sex)
         color_map.append(color_sex[sex_dict[name]])
         daily_use_dict[name] = randint(0, 10)
-    print("users generated")
     return name_list, age_dict, sex_dict, daily_use_dict, color_map
 
 # Function that generates the nodes
@@ -39,8 +38,6 @@ def node_generation(nb_of_nodes):
     nx.set_node_attributes(my_network, age_dict, 'age')
     nx.set_node_attributes(my_network, sex_dict, 'sex')
     nx.set_node_attributes(my_network, daily_use_dict, 'daily_use')
-
-    print("node generated")
     return my_network, color_map
 
 # Function that addd the nodes corresponding to the special feature D (here, they are "NaN" users)
@@ -65,7 +62,6 @@ def add_feature_D(my_network, color_map, nb):
     nx.set_node_attributes(my_network, age_dict, 'age')
     nx.set_node_attributes(my_network, sex_dict, 'sex')
     nx.set_node_attributes(my_network, daily_use_dict, 'daily_use')
-
     return my_network, color_map
 
 # Function that generates edges between the existing nodes
@@ -82,7 +78,6 @@ def edge_generation(my_network, nb_of_edges):
             delta_daily_use = abs(n1["daily_use"] - n2["daily_use"])
 
             my_network.add_edge(e1, e2, delta_age=delta_age, delta_daily_use=delta_daily_use)
-    print("edge generated")
     return my_network
 
 # Function that position A,B on the left and the others on the right
@@ -101,8 +96,6 @@ def graph_generation(nb_nodes, nb_of_edges):
     my_network, color_map = node_generation(n_nodes)
     my_network = edge_generation(my_network, nb_of_edges)
     my_network, color_map = add_feature_D(my_network, color_map, nb_nodes-n_nodes)
-
-    print("graph generated")
     return my_network, color_map
 
 
