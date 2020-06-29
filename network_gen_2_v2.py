@@ -133,6 +133,7 @@ def MC_Sampling(my_network, nb_seeds, message_type):
     R = round(1/(epsilon**2)*math.log10(nb_seeds)*math.log10(1/delta)) #number of repetitions
     print(R)
     list_of_seeds = []
+    value_seed = []
 
     # compute nb_seeds times
     for s in range(nb_seeds):
@@ -143,22 +144,40 @@ def MC_Sampling(my_network, nb_seeds, message_type):
                 continue           
             cumulated_influence = 0
             for i in range(R):
-                cumulated_influence += compute_influence(copy_network, node, message_type)
+                #--------------------------------------------------------------------
+                #-----------  List of seeds added to compute influence --------------
+                cumulated_influence += compute_influence(copy_network, node, message_type, list_of_seeds)
             avg_influence = cumulated_influence/R
             computed_influence[node] = avg_influence
         # look for the node with the best influence
         seed = max(computed_influence, key=computed_influence.get)
         list_of_seeds.append(seed)
         copy_network.nodes[seed]['state'] = "seed"
-    return list_of_seeds
+        value_seed.append(computed_influence[seed])
+    #----------------------------------------------------------------------------------------
+    #-----------  MC sampling return the sum of the influence of all the seeds --------------
+    return list_of_seeds, sum(value_seed), 2
 
-def compute_influence(my_network, node, message_type, first=True):
+def compute_influence(my_network, node, message_type, list_of_seeds, first=True):
     #reinitialize the states of the node for the seed simulation to come
     if first:
         for nod in my_network.nodes:
             if my_network.nodes[nod]['state'] != "seed":
                 my_network.nodes[nod]['state'] = "waiting"
     
+
+    #----------------------------------------------------------------
+    #-----------  do the CASCADE for the seeds we know --------------
+    #do the already choosen seeds simulation
+    for seed in list_of_seeds:
+        exploration_nodes = nx.neighbors(my_network, seed)
+        for neigh in exploration_nodes:
+            neighbor = my_network.nodes[neigh]
+            if neighbor['state'] != "seed" and neighbor['state'] != "activated":
+                prob = prob_edge_activation(my_network, seed, neigh)
+                if random.random() >= 1-prob:
+                    my_network.nodes[neigh]['state'] = "activated"
+
     # actual seed simulation
     Z = 0
     activated_neigh = []
@@ -175,22 +194,18 @@ def compute_influence(my_network, node, message_type, first=True):
                     Z += 1
     if len(activated_neigh) == 0:
         return 0
-    return Z + sum([compute_influence(my_network, neigh, message_type, first=False) for neigh in activated_neigh])
+    return Z + sum([compute_influence(my_network, neigh, message_type, list_of_seeds,  first=False) for neigh in activated_neigh])
 
 def approx_err_plot(nb_nodes, nb_seeds):
     R = 50
     delta = np.array([0.1, 0.05, 0.01])
     
     fig, axs = plt.subplots(3)
-
-    approx_err = (1/np.exp(1))
     j = 0
     for dval in delta :
         x_axis = np.linspace(1,R, R)
         y_axis = np.sqrt((1/x_axis)*math.log10(nb_seeds)*math.log10(1/dval)) 
-        approx = np.full(R, approx_err)
         axs[j].plot(x_axis, y_axis)
-        axs[j].plot(x_axis, approx)
         axs[j].set_title('delta='+str(dval) )
         axs[j].set(xlabel='R, number of repetition' , ylabel='Approximation error')
         j += 1
@@ -198,6 +213,24 @@ def approx_err_plot(nb_nodes, nb_seeds):
     fig.suptitle("Approximation error of the activation probability")
     for ax in axs.flat:
         ax.label_outer()
+    plt.show()
+
+def influence_spread_plot(my_network, nb_seed_max):
+    nb_nodes = my_network.number_of_nodes()
+    y_axis_greedy = np.full(nb_seed_max-1, (1-1/np.exp(1))*nb_nodes)
+
+    x_axis = np.linspace(2, nb_seed_max, nb_seed_max-1)
+    y_axis = []
+    for nb_seeds in range(2, nb_seed_max+1):
+        result_MC = MC_Sampling(my_network, nb_seeds, "Male")
+        print(result_MC)
+        y_axis.append(result_MC[1] )
+
+    plt.plot(x_axis, y_axis)
+    plt.plot(x_axis, y_axis_greedy)
+    plt.title("influence spread  with respect to the number of seeds")
+    plt.xlabel("Number of seeds")
+    plt.ylabel("Influance spread")
     plt.show()
 
 
@@ -237,8 +270,12 @@ if __name__ == "__main__":
     my_network, color_map = graph_generation(40, 60)
 
     print_info(my_network)
+    print(MC_Sampling(my_network, 2, "Male"))
+    print(MC_Sampling(my_network, 3, "Male"))
+    print(MC_Sampling(my_network, 4, "Male"))
     print(MC_Sampling(my_network, 5, "Male"))
 
     # draw_graph(my_network, color_map, bipartite=False)
 
-    approx_err_plot(100, 3)
+    # approx_err_plot(100, 3)
+    influence_spread_plot(my_network, 10)
