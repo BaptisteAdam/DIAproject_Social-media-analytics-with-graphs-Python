@@ -140,7 +140,6 @@ def MC_Sampling(my_network, nb_seeds, message_type):
     R = round(1/(epsilon**2)*math.log10(nb_seeds)*math.log10(1/delta)) #number of repetitions
     print(R)
     list_of_seeds = []
-    value_seed = []
 
     # compute nb_seeds times
     for s in range(nb_seeds):
@@ -158,8 +157,7 @@ def MC_Sampling(my_network, nb_seeds, message_type):
         seed = max(computed_influence, key=computed_influence.get)
         list_of_seeds.append(seed)
         copy_network.nodes[seed]['state'] = "seed"
-        value_seed.append(computed_influence[seed])
-    return list_of_seeds, value_seed
+    return list_of_seeds
 
 def compute_influence(my_network, node, message_type, first=True):
     #reinitialize the states of the node for the next seed simulation
