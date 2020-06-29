@@ -124,7 +124,7 @@ def draw_graph(my_network, color_map, bipartite=False):
         nx.draw(my_network, with_labels=True, node_color=color_map)
     plt.show()
 
-def MC_Sampling(my_network, nb_seeds, message): 
+def MC_Sampling(my_network, nb_seeds, message_type): 
     # Initialisation
     copy_network = my_network.copy()
     state_dict = {name:'waiting' for name in copy_network.nodes}
@@ -135,27 +135,31 @@ def MC_Sampling(my_network, nb_seeds, message):
     R = round(1/(epsilon**2)*math.log10(nb_seeds)*math.log10(1/delta)) #number of repetitions
     print(R)
     list_of_seeds = []
+    value_seed = []
 
     # compute nb_seeds times
     for s in range(nb_seeds):
         computed_influence = {}
-
         # compute influence of each potential seed
         for node in copy_network.nodes:
             if copy_network.nodes[node]['state'] == "seed":
                 continue
+            #reinitialize the states of the node for the next seed simulation
+            for nod in copy_network.nodes:
+                copy_network.nodes[nod]['state'] = "waiting"
             cumulated_influence = 0
             for i in range(R):
-                cumulated_influence += compute_influence(copy_network, node, message)
+                cumulated_influence += compute_influence(copy_network, node, message_type)
             avg_influence = cumulated_influence/R
             computed_influence[node] = avg_influence
         # look for the node with the best influence
         seed = max(computed_influence, key=computed_influence.get)
         list_of_seeds.append(seed)
         copy_network.nodes[seed]['state'] = "seed"
-    return list_of_seeds
+        value_seed.append(computed_influence[seed])
+    return list_of_seeds, value_seed
 
-def compute_influence(my_network, node, message):
+def compute_influence(my_network, node, message_type):
     Z = 0
     activated_neigh = []
     exploration_nodes = nx.neighbors(my_network, node)
@@ -166,11 +170,36 @@ def compute_influence(my_network, node, message):
             if random.random() >= prob:
                 my_network.nodes[neigh]['state'] = "activated"
                 activated_neigh.append(neigh)
-                if my_network.nodes[neigh]["sex"] == message:
+                if my_network.nodes[neigh]["sex"] == message_type:
                     Z += 1
     if len(activated_neigh) == 0:
         return 0
-    return Z + sum([compute_influence(my_network, neigh, message) for neigh in activated_neigh])
+    return Z + sum([compute_influence(my_network, neigh, message_type) for neigh in activated_neigh])
+
+def approx_err_plot(nb_nodes, nb_seeds):
+    delta = np.array([0.1, 0.05, 0.01])
+    epsilon = np.array([0.1, 0.05, 0.01])
+    
+    fig, axs = plt.subplots(3, 3)
+    i = 0
+    for epval in epsilon:
+        approx_err = (1/np.exp(1)) + epval
+        j = 0
+        for dval in delta :
+            R = int(round(1/(epval**2)*math.log10(nb_seeds)*math.log10(1/dval)))
+            x_axis = np.linspace(1,R, R)
+            y_axis = np.sqrt((1/x_axis)*math.log10(nb_seeds)*math.log10(1/dval)) 
+            approx = np.full(R, approx_err)
+            axs[i, j].plot(x_axis, y_axis)
+            axs[i, j].plot(x_axis, approx)
+            axs[i, j].set_title("R=" + str(R))
+            axs[i, j].set(xlabel='delta='+str(dval) , ylabel='epsilon='+str(epval))
+            j += 1
+        i += 1    
+    fig.suptitle("Approximation error")
+    for ax in axs.flat:
+        ax.label_outer()
+    plt.show()
 
 
 # --------------------------------- #
@@ -206,9 +235,12 @@ def print_info(my_network):
 #               MAIN                #
 # --------------------------------- #
 if __name__ == "__main__":
-    my_network, color_map = graph_generation(4, 6)
+    my_network, color_map = graph_generation(100, 300)
 
     print_info(my_network)
-    print(MC_Sampling(my_network, 2, "Male"))
+    print(MC_Sampling(my_network, 15, "Male"))
 
-    draw_graph(my_network, color_map, bipartite=False)
+    # draw_graph(my_network, color_map, bipartite=False)
+
+    approx_err_plot(100, 3)
+
