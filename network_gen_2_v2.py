@@ -144,8 +144,6 @@ def MC_Sampling(my_network, nb_seeds, message_type):
                 continue           
             cumulated_influence = 0
             for i in range(R):
-                #--------------------------------------------------------------------
-                #-----------  List of seeds added to compute influence --------------
                 cumulated_influence += compute_influence(copy_network, node, message_type, list_of_seeds)
             avg_influence = cumulated_influence/R
             computed_influence[node] = avg_influence
@@ -154,9 +152,7 @@ def MC_Sampling(my_network, nb_seeds, message_type):
         list_of_seeds.append(seed)
         copy_network.nodes[seed]['state'] = "seed"
         value_seed.append(computed_influence[seed])
-    #----------------------------------------------------------------------------------------
-    #-----------  MC sampling return the sum of the influence of all the seeds --------------
-    return list_of_seeds, sum(value_seed), 2
+    return list_of_seeds, round(sum(value_seed), 2)
 
 def compute_influence(my_network, node, message_type, list_of_seeds, first=True):
     #reinitialize the states of the node for the seed simulation to come
@@ -164,20 +160,10 @@ def compute_influence(my_network, node, message_type, list_of_seeds, first=True)
         for nod in my_network.nodes:
             if my_network.nodes[nod]['state'] != "seed":
                 my_network.nodes[nod]['state'] = "waiting"
-    
 
-    #----------------------------------------------------------------
-    #-----------  do the CASCADE for the seeds we know --------------
-    #do the already choosen seeds simulation
-    for seed in list_of_seeds:
-        exploration_nodes = nx.neighbors(my_network, seed)
-        for neigh in exploration_nodes:
-            neighbor = my_network.nodes[neigh]
-            if neighbor['state'] != "seed" and neighbor['state'] != "activated":
-                prob = prob_edge_activation(my_network, seed, neigh)
-                if random.random() >= 1-prob:
-                    my_network.nodes[neigh]['state'] = "activated"
-
+        #do the already choosen seeds simulation
+        influence_seed(my_network, list_of_seeds)
+     
     # actual seed simulation
     Z = 0
     activated_neigh = []
@@ -195,6 +181,21 @@ def compute_influence(my_network, node, message_type, list_of_seeds, first=True)
     if len(activated_neigh) == 0:
         return 0
     return Z + sum([compute_influence(my_network, neigh, message_type, list_of_seeds,  first=False) for neigh in activated_neigh])
+
+def influence_seed(my_network, list_of_seeds):
+    activated_neigh = []
+    for seed in list_of_seeds:
+        exploration_nodes = nx.neighbors(my_network, seed)
+        for neigh in exploration_nodes:
+            neighbor = my_network.nodes[neigh]
+            if neighbor['state'] != "seed" and neighbor['state'] != "activated":
+                prob = prob_edge_activation(my_network, seed, neigh)
+                if random.random() >= 1-prob:
+                    my_network.nodes[neigh]['state'] = "activated"
+                    activated_neigh.append(neigh)
+    if len(activated_neigh) == 0:
+        return 0
+    return influence_seed(my_network, activated_neigh)
 
 def approx_err_plot(nb_nodes, nb_seeds):
     R = 50
@@ -271,11 +272,9 @@ if __name__ == "__main__":
 
     print_info(my_network)
     print(MC_Sampling(my_network, 2, "Male"))
-    print(MC_Sampling(my_network, 3, "Male"))
-    print(MC_Sampling(my_network, 4, "Male"))
-    print(MC_Sampling(my_network, 5, "Male"))
+ 
 
     # draw_graph(my_network, color_map, bipartite=False)
 
     # approx_err_plot(100, 3)
-    influence_spread_plot(my_network, 10)
+    # influence_spread_plot(my_network, 10)
