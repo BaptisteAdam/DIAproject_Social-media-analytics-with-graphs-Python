@@ -315,7 +315,6 @@ def UCB1_seed(my_network, T, message, seeds = []):
 
     for seed in seeds:
         copy_network.nodes[seed]['state'] = "seed"
-    influence_seed(copy_network, seeds)
 
     # First pull for every arm
     for node in copy_network.nodes:
@@ -337,7 +336,6 @@ def UCB1_seed(my_network, T, message, seeds = []):
         for node in my_network.nodes:
             if copy_network.nodes[node]['state'] != "seed":
                 copy_network.nodes[node]['state'] = "waiting"
-        influence_seed(copy_network, seeds)
 
         if copy_network.nodes[node]["state"] == "seed":
             expected_reward[id_nodes[node]] = 0
