@@ -105,8 +105,9 @@ def graph_generation(nb_nodes, nb_of_edges):
 # --------------------------------- #
 
 # Function that return the probability of an edge activation
-def prob_edge_activation(my_network, node1, node2):
-    return random.random()**5
+def prob_edge_activation(my_network, node1, node2, randomized = False):
+    if randomized = True:
+        return random.random()**5
 
     
     edge = my_network.get_edge_data(node1, node2)[0]
@@ -178,7 +179,7 @@ def compute_influence(my_network, node, message_type, list_of_seeds, first=True)
         for neigh in exploration_nodes:
             neighbor = my_network.nodes[neigh]
             if neighbor['state'] != "seed" and neighbor['state'] != "activated":
-                prob = prob_edge_activation(my_network, seed, neigh)
+                prob = prob_edge_activation(my_network, seed, neigh, randomized = True)
                 if random.random() >= 1-prob:
                     my_network.nodes[neigh]['state'] = "activated"
                     activated_neigh_by_seeds.append(neigh)
@@ -190,7 +191,7 @@ def compute_influence(my_network, node, message_type, list_of_seeds, first=True)
     for neigh in exploration_nodes:
         neighbor = my_network.nodes[neigh]
         if neighbor['state'] != "seed" and neighbor['state'] != "activated":
-            prob = prob_edge_activation(my_network, node, neigh)
+            prob = prob_edge_activation(my_network, node, neigh, randomized = True)
             if random.random() >= 1-prob:
                 my_network.nodes[neigh]['state'] = "activated"
                 activated_neigh.append(neigh)
