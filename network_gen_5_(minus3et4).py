@@ -155,6 +155,7 @@ def MC_Sampling(my_network, nb_seeds, message_type):
         list_of_seeds.append(seed)
         copy_network.nodes[seed]['state'] = "seed"
         value_seed.append(computed_influence[seed])
+    print("MC sampling done for {0} seeds and message type {1}".format(nb_seeds, message_type))
     return list_of_seeds, round(sum(value_seed), 2)
 
 # Function that compute the influance of the possible seed, given already choosen seeds
@@ -323,7 +324,7 @@ def print_info(my_network):
 #               MAIN                #
 # --------------------------------- #
 if __name__ == "__main__":
-    my_network, color_map = graph_generation(80, 100)
+    my_network, color_map = graph_generation(40, 60)
 
     # print_info(my_network)
     # print(MC_Sampling(my_network, 5, "Male"))
@@ -333,4 +334,4 @@ if __name__ == "__main__":
 
     # draw_graph(my_network, color_map, bipartite=False)
 
-    print(best_alloc_MI(my_network, 15))
+    print("best allocation of the budget : {}".format(best_alloc_MI(my_network, 8)))
